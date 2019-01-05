@@ -74,10 +74,11 @@ export default class NumericInput extends Component {
         const convertedNumber = _.toNumber(value);
         const isNaN = _.isNaN(convertedNumber);
 
-        return !isNaN || 
+        const result = !isNaN && 
             (((this.props.valueType === 'real' && mReal(convertedNumber)) || (this.props.valueType !== 'real' && mInt(convertedNumber))) && 
             (this.props.maxValue === null || (parseFloat(convertedNumber) <= this.props.maxValue)) && 
             (this.props.minValue === null || (parseFloat(convertedNumber) >= this.props.minValue)));
+        return result;
     }
 
     intMatch(value) {
@@ -85,7 +86,7 @@ export default class NumericInput extends Component {
     }
 
     realMatch(value) { 
-        _.isFinite(value);
+        return _.isFinite(value);
     }
 
     onChange(value) {
@@ -140,11 +141,11 @@ export default class NumericInput extends Component {
             });
         }
     }
-    
+
     onBlur() {
         const match = this.state.stringValue.match(/-?[0-9]\d*(\.\d+)?/);
         const legal = match && match[0] === match.input && ((this.props.maxValue === null || (parseFloat(this.state.stringValue) <= this.props.maxValue)) && (this.props.minValue === null || (parseFloat(this.state.stringValue) >= this.props.minValue)));
-        
+
         if (!legal) {
             if (this.ref) {
                 this.ref.blur();
@@ -154,8 +155,9 @@ export default class NumericInput extends Component {
                         if (this.props.onChange) { 
                             this.props.onChange(this.state.lastValid);
                         }
-                        this.setState({ value: this.state.lastValid }, () => {
+                        this.setState({ value: this.state.lastValid, legal: true }, () => {
                             this.setState({ 
+                                legal: true,
                                 value: this.state.lastValid,
                                 stringValue: this.state.lastValid.toString()
                             });
@@ -239,7 +241,6 @@ export default class NumericInput extends Component {
                     borderRightColor: borderColor 
                 }, 
                 this.props.inputStyle];
-        const errorInputStyle = [...inputStyle, this.props.errorInputStyle];
         const upDownStyle = [
             { 
                 alignItems: 'center', 
@@ -289,18 +290,22 @@ export default class NumericInput extends Component {
                 { borderTopLeftRadius: borderRadiusTotal, borderBottomLeftRadius: borderRadiusTotal }
                 : {}
         ];
-        const inputWraperStyle = {
+        const inputWrapperStyle = {
             alignSelf: 'center',
             borderLeftColor: borderColor,
             borderLeftWidth: separatorWidth,
             borderRightWidth: separatorWidth,
             borderRightColor: borderColor
         };
+        const errorInputWrapperStyle = { 
+            ...inputWrapperStyle, 
+            ...this.props.errorInputStyle 
+        };
         const keyboardType = this.props.keyboardType;
 
         if (this.props.type === 'up-down') {
             return (
-                <View style={inputContainerStyle}>
+                <View style={[...inputContainerStyle, this.state.legal !== false ? {} : this.props.errorInputStyle]}>
                     <TextInput
                         ref={ref => this.ref = ref} 
                         editable={editable} 
@@ -309,7 +314,7 @@ export default class NumericInput extends Component {
                         keyboardType={keyboardType} 
                         value={this.state.stringValue} 
                         onChangeText={this.onChange} 
-                        style={this.state.legal ? inputStyle : errorInputStyle}  
+                        style={inputStyle}  
                         onBlur={this.onBlur} 
                         onFocus={this.onFocus}
                     />
@@ -362,7 +367,7 @@ export default class NumericInput extends Component {
                         } 
                     />
                 </Button>
-                <View style={[inputWraperStyle]}>
+                <View style={this.state.legal !== false ? inputWrapperStyle : errorInputWrapperStyle}>
                     <TextInput
                         ref={ref => this.ref = ref}
                         editable={editable} 
@@ -371,7 +376,7 @@ export default class NumericInput extends Component {
                         keyboardType={keyboardType} 
                         value={this.state.stringValue} 
                         onChangeText={this.onChange} 
-                        style={this.state.legal ? inputStyle : errorInputStyle}  
+                        style={inputStyle}   
                         onBlur={this.onBlur} onFocus={this.onFocus} 
                     />
                 </View>
